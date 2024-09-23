@@ -19,18 +19,15 @@ namespace Entities
             if (component1 != null)
                 component2.Value = component1.localToWorldMatrix;
 
-            CommandBuffer.RemoveComponentData<CopyInitialTransformFromGameObject>(entity);
+            EntityManager.RemoveComponentData<CopyInitialTransformFromGameObject>(entity, CommandBuffer);
 
-            var position = EntityManager.GetComponentData<Position>(entity);
-            if (position != null)
+            if (EntityManager.TryGetComponentData<Position>(entity, out var position))
                 position.Value = component1.position;
 
-            var rotation = EntityManager.GetComponentData<Rotation>(entity);
-            if (rotation != null)
+            if (EntityManager.TryGetComponentData<Rotation>(entity, out var rotation))
                 rotation.Value = component1.rotation;
-
-            var scale = EntityManager.GetComponentData<Scale>(entity);
-            if (scale != null)
+                
+            if (EntityManager.TryGetComponentData<Scale>(entity, out var scale))
                 scale.Value = component1.lossyScale;
         }
     }

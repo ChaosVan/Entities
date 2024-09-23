@@ -41,15 +41,23 @@ namespace Entities
             if (!TryGetEntityByGameObject(gameObject, out var entity))
             {
                 entity = Create(archetype, commandBuffer);
-                commandBuffer.BindGameObject(entity, gameObject);
-                LookUp[gameObject] = entity;
+                BindGameObject(entity, gameObject, commandBuffer);
             }
             else
             {
-                commandBuffer.AddComponentData(entity, archetype);
+                AddComponentData(entity, archetype, commandBuffer);
             }
 
             return entity;
+        }
+
+        public static void BindGameObject(Entity entity, GameObject gameObject, EntityCommandBuffer commandBuffer = null)
+        {
+            if (!CheckValid(entity))
+                return;
+
+            commandBuffer.BindGameObject(entity, gameObject);
+            LookUp[gameObject] = entity;
         }
 
         public static void UnbindGameObject(Entity entity, out GameObject gameObject, EntityCommandBuffer commandBuffer = null)

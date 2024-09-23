@@ -25,11 +25,6 @@ namespace Entities
             AddEntityDestroyCommand(ECBCommand.DestroyEntity, entity);
         }
 
-        internal void AddComponentData<T>(Entity entity) where T : IComponentData
-        {
-            AddEntityComponentTypeCommand(ECBCommand.AddComponent, entity, typeof(T));
-        }
-
         internal void AddComponentData(Entity entity, ComponentType componentType)
         {
             AddEntityComponentTypeCommand(ECBCommand.AddComponent, entity, componentType);
@@ -40,9 +35,9 @@ namespace Entities
             AddEntityArchetypeCommand(ECBCommand.AddComponentWithEntityArchetype, entity, archetype);
         }
 
-        internal void RemoveComponentData<T>(Entity entity) where T : IComponentData
+        internal void RemoveComponentData(Entity entity, ComponentType componentType)
         {
-            AddEntityComponentTypeCommand(ECBCommand.RemoveComponent, entity, typeof(T));
+            AddEntityComponentTypeCommand(ECBCommand.RemoveComponent, entity, componentType);
         }
 
         internal void RemoveComponentData(Entity entity, EntityQuery query)

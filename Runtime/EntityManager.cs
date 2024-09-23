@@ -158,16 +158,15 @@ namespace Entities
             }
         }
 
-        public static void AddComponentData<T>(Entity entity, EntityCommandBuffer commandBuffer = null) where T : IComponentData
-        {
-            commandBuffer ??= CreateBeginCommandBuffer();
-            commandBuffer.AddComponentData<T>(entity);
-        }
-
         public static void AddComponentData(Entity entity, ComponentType componentType, EntityCommandBuffer commandBuffer = null)
         {
             commandBuffer ??= CreateBeginCommandBuffer();
             commandBuffer.AddComponentData(entity, componentType);
+        }
+
+        public static void AddComponentData<T>(Entity entity, EntityCommandBuffer commandBuffer = null) where T : IComponentData
+        {
+            AddComponentData(entity, typeof(T), commandBuffer);
         }
 
         public static void AddComponentData(Entity entity, EntityArchetype archetype, EntityCommandBuffer commandBuffer = null)
@@ -176,10 +175,15 @@ namespace Entities
             commandBuffer.AddComponentData(entity, archetype);
         }
 
-        public static void RemoveComponentData<T>(Entity entity, EntityCommandBuffer commandBuffer = null) where T : IComponentData
+        public static void RemoveComponentData(Entity entity, ComponentType componentType, EntityCommandBuffer commandBuffer = null)
         {
             commandBuffer ??= CreateEndCommandBuffer();
-            commandBuffer.RemoveComponentData<T>(entity);
+            commandBuffer.RemoveComponentData(entity, componentType);
+        }
+
+        public static void RemoveComponentData<T>(Entity entity, EntityCommandBuffer commandBuffer = null) where T : IComponentData
+        {
+            RemoveComponentData(entity, typeof(T), commandBuffer);
         }
 
         public static void RemoveComponentData(Entity entity, EntityQuery query, EntityCommandBuffer commandBuffer = null)
@@ -190,16 +194,22 @@ namespace Entities
 
         public static void SetComponentData(Entity entity, IComponentData componentData, EntityCommandBuffer commandBuffer = null)
         {
-            commandBuffer ??= CreateEndCommandBuffer();
+            commandBuffer ??= CreateBeginCommandBuffer();
             commandBuffer.SetComponentData(entity, componentData);
         }
 
-        public static T GetComponentData<T>(Entity entity) where T : IComponentData
+        public static IComponentData SetComponentData(Entity entity, ComponentType componentType, EntityCommandBuffer commandBuffer = null)
         {
-            if (TryGetComponentData(entity, typeof(T), out var componentData))
-                return (T)componentData;
+            var componentData = (IComponentData)ReferencePool.SpawnInstance(TypeManager.GetType(componentType.TypeIndex));
+            SetComponentData(entity, componentData, commandBuffer);
+            return componentData;
+        }
 
-            return default;
+        public static T SetComponentData<T>(Entity entity, EntityCommandBuffer commandBuffer = null) where T : IComponentData
+        {
+            var componentData = ReferencePool.SpawnInstance<T>();
+            SetComponentData(entity, componentData, commandBuffer);
+            return componentData;
         }
 
         public static bool TryGetComponentData(Entity entity, ComponentType componentType, out IComponentData componentData)
@@ -207,6 +217,15 @@ namespace Entities
             componentData = null;
             if (CheckValid(entity) && TryGetEntityData(entity, out var data))
                 return data.InternalGetComponentData(componentType, out componentData);
+
+            return false;
+        }
+
+        public static bool TryGetComponentData<T>(Entity entity, out T componentData) where T : IComponentData
+        {
+            componentData = default;
+            if (TryGetComponentData(entity, typeof(T), out var component))
+                return (componentData = (T)component) != null;
 
             return false;
         }
@@ -334,10 +353,8 @@ namespace Entities
         {
             if (EntityManager.TryGetComponentData(entity, typeof(T), out var componentData))
                 return (T)componentData;
-
-            componentData = ReferencePool.SpawnInstance<T>();
-            EntityManager.SetComponentData(entity, componentData, commandBuffer);
-            return (T)componentData;
+            
+            return EntityManager.SetComponentData<T>(entity, commandBuffer);;
         }
 
         public static T GetOrAddComponentObject<T>(this Entity entity, EntityCommandBuffer commandBuffer = null) where T : Component
