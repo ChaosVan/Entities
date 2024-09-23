@@ -1,0 +1,3 @@
+<linker>
+    <assembly fullname="Entities" preserve="all"/>
+</linker>
