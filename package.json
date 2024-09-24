@@ -20,9 +20,14 @@
 			"path": "Samples~/RollSystem"
 		},
 		{
-			"displayName": "RigidBody",
+			"displayName": "CopyFrom",
 			"description": "Shows how to sync transform matrix to entities.",
-			"path": "Samples~/RigidBody"
+			"path": "Samples~/CopyFrom"
+		},
+		{
+			"displayName": "Spawner",
+			"description": "Shows how to spawn an entity, and bind GameObject.",
+			"path": "Samples~/Spawner"
 		}
 	]
 }

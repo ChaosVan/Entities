@@ -1,34 +1,22 @@
-/*
- * COPYRIGHT © 2024 CHANGYOU.COM LIMITED. ALL RIGHTS RESERVED.
- * 
- * FILENAME:    RigidbodySample.cs
- * TIME:        2024年9月19日 10:20:22
- * AUTHOR:      赵朝凡
- * CONTACT:     zhaochaofan@cyou-inc.com
- * DESCRIPTION: LocalToWorldInfo
- */
-
-using System.Collections;
-using System.Collections.Generic;
 using Entities;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace Samples.Entities.Rigidbody
+namespace Samples.Entities.CopyFrom
 {
-	public class RigidbodySample : MonoBehaviour
+	public class CopyFromSample : MonoBehaviour
 	{
 		public Transform Info;
 
 		public void AddForce()
 		{
-			var body = GetComponent<UnityEngine.Rigidbody>();
+			var body = GetComponent<Rigidbody>();
 			body.AddForce(Vector3.up * 10, ForceMode.Impulse);
 		}
 
 		public void Reset()
 		{
-			var body = GetComponent<UnityEngine.Rigidbody>();
+			var body = GetComponent<Rigidbody>();
 			body.velocity = Vector3.zero;
 			body.angularVelocity = Vector3.zero;
 			body.transform.position = new Vector3(2, 20, 2);
@@ -39,8 +27,7 @@ namespace Samples.Entities.Rigidbody
 		{
 			if (Info != null && EntityManager.TryGetEntityByGameObject(this.gameObject, out var entity))
 			{
-				var matrix = EntityManager.GetComponentData<LocalToWorld>(entity);
-				if (matrix != null)
+				if (EntityManager.TryGetComponentData<LocalToWorld>(entity, out var matrix))
 				{
 					Info.GetChild(0).GetComponent<Text>().text = matrix.Value.c0.x.ToString("f2");
 					Info.GetChild(1).GetComponent<Text>().text = matrix.Value.c0.y.ToString("f2");

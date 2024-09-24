@@ -1813,7 +1813,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 145526513}
-        m_TargetAssemblyTypeName: Samples.Entities.Rigidbody.RigidbodySample, Assembly-CSharp
+        m_TargetAssemblyTypeName: Samples.Entities.CopyFrom.CopyFromSample, Assembly-CSharp
         m_MethodName: AddForce
         m_Mode: 1
         m_Arguments:
@@ -2549,7 +2549,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 145526513}
-        m_TargetAssemblyTypeName: Samples.Entities.Rigidbody.RigidbodySample, Assembly-CSharp
+        m_TargetAssemblyTypeName: Samples.Entities.CopyFrom.CopyFromSample, Assembly-CSharp
         m_MethodName: Reset
         m_Mode: 1
         m_Arguments:
