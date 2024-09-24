@@ -13,9 +13,8 @@ namespace Entities
     /// </summary>
     public class SingletonBehaviour<T> : MonoBehaviour where T : MonoBehaviour
     {
-#if ODIN_INSPECTOR
-        [SerializeField]
-        protected bool showOdinInfo;
+#if UNITY_EDITOR && ODIN_INSPECTOR
+        [Sirenix.OdinInspector.ShowInInspector] protected bool showOdinInfo;
 #endif
 
         [DomainReload]

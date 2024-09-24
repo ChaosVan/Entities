@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-#if ODIN_INSPECTOR
+﻿#if ODIN_INSPECTOR
 using Sirenix.OdinInspector;
 #endif
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Entities

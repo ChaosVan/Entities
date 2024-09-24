@@ -1,4 +1,3 @@
-using Newtonsoft.Json;
 #if ODIN_INSPECTOR
 using Sirenix.OdinInspector;
 #endif
@@ -142,7 +141,7 @@ namespace Entities
         private readonly List<List<IComponentData>> snapshot = new List<List<IComponentData>>();
         private readonly List<ulong> sortList = new List<ulong>();
 
-        public string TakeSnapshot(JsonSerializerSettings settings)
+        public string TakeSnapshot(Newtonsoft.Json.JsonSerializerSettings settings)
         {
             sortList.Clear();
             sortList.AddRange(Entities.Keys);
@@ -157,7 +156,7 @@ namespace Entities
                 }
             }
 
-            return JsonConvert.SerializeObject(snapshot, settings);
+            return Newtonsoft.Json.JsonConvert.SerializeObject(snapshot, settings);
         }
 
         public Dictionary<ulong, List<IComponentData>> DebugEntities => Entities;

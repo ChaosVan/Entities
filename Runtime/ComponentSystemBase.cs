@@ -1,5 +1,4 @@
 ﻿using System;
-using UnityEngine;
 
 namespace Entities
 {
@@ -16,8 +15,8 @@ namespace Entities
     /// </remarks>
     public abstract class ComponentSystemBase
     {
-#if UNITY_EDITOR
-        [SerializeField] protected bool showOdinInfo;
+#if UNITY_EDITOR && ODIN_INSPECTOR
+        [Sirenix.OdinInspector.ShowInInspector] protected bool showOdinInfo;
 #endif
 
         internal SystemState m_State;
