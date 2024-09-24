@@ -28,6 +28,11 @@
 			"displayName": "Spawner",
 			"description": "Shows how to spawn an entity, and bind GameObject.",
 			"path": "Samples~/Spawner"
+		},
+		{
+			"displayName": "LockstepSystems",
+			"description": "Shows how to use RateManager.",
+			"path": "Samples~/LockstepSystems"
 		}
 	]
 }

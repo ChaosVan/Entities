@@ -9,15 +9,15 @@ namespace Samples.Entities.Spawner
 		public int count;
 		public float range;
 
-        public override void Start()
-        {
-            base.Start();
+		public override void Start()
+		{
+			base.Start();
 			component.root = transform;
 			component.prefab = prefab;
 			component.count = count;
 			component.range = range;
-        }
-    }
+		}
+	}
 
 	public class CubeTarget : IComponentData { }
 
@@ -30,19 +30,19 @@ namespace Samples.Entities.Spawner
 	}
 
 	[UpdateInGroup(typeof(LateSimulationSystemGroup))]
-    public class CubeSpawnerSystem : SystemBase<CubeSpawner>
-    {
+	public class CubeSpawnerSystem : SystemBase<CubeSpawner>
+	{
 		private EntityArchetype archetype = new EntityArchetype(typeof(CubeTarget));
 
-        protected override void OnStartRunning()
-        {
-            base.OnStartRunning();
+		protected override void OnStartRunning()
+		{
+			base.OnStartRunning();
 
 			CommandBufferSystem = World.GetExistingSystem<BeginInitializationEntityCommandBufferSystem>();
-        }
+		}
 
-        protected override void OnUpdate(int index, Entity entity, CubeSpawner component1)
-        {
+		protected override void OnUpdate(int index, Entity entity, CubeSpawner component1)
+		{
 			int spawnCount = component1.count;
 			if (EntityManager.TryGetEntities(new EntityQuery(typeof(CubeTarget)), out var list))
 			{
@@ -57,6 +57,6 @@ namespace Samples.Entities.Spawner
 				newEntity.GetOrAddComponentData<LifeTime>(CommandBuffer).Value = Random.Range(3f, 10f);
 				gameObject.SetActive(true);
 			}
-        }
-    }
+		}
+	}
 }

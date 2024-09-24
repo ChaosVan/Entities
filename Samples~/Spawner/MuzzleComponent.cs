@@ -12,11 +12,11 @@ namespace Samples.Entities.Spawner
 	{
 		public Transform Point;
 
-        public override void Start()
-        {
-            base.Start();
+		public override void Start()
+		{
+			base.Start();
 
-            component.Point = Point;
-        }
+			component.Point = Point;
+		}
 	}
 }
