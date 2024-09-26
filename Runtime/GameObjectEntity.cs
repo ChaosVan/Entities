@@ -4,7 +4,7 @@ namespace Entities
 {
     public sealed class GameObjectEntity : MonoBehaviour
     {
-        private static EntityArchetype fromArchetype, toArchetype;
+        private static EntityQuery fromArchetype, toArchetype;
 
         [Tooltip("If true, the Entity's Matrix will be copied from the GameObject, otherwise the Entity's Matrix will be copied to the GameObject")]
         [SerializeField]

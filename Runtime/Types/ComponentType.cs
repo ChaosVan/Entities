@@ -9,8 +9,8 @@ namespace Entities
         public enum AccessMode
         {
             ReadWrite,
-            ReadOnly,
-            Exclude
+            // ReadOnly,
+            Exclude,
         }
 
         public int TypeIndex;
@@ -39,26 +39,26 @@ namespace Entities
             return type;
         }
 
-        //public static ComponentType ReadOnly(Type type)
-        //{
+        // public static ComponentType ReadOnly(Type type)
+        // {
         //    ComponentType t = FromTypeIndex(TypeManager.GetTypeIndex(type));
         //    t.AccessModeType = AccessMode.ReadOnly;
         //    return t;
-        //}
+        // }
 
-        //public static ComponentType ReadOnly(int typeIndex)
-        //{
+        // public static ComponentType ReadOnly(int typeIndex)
+        // {
         //    ComponentType t = FromTypeIndex(typeIndex);
         //    t.AccessModeType = AccessMode.ReadOnly;
         //    return t;
-        //}
+        // }
 
-        //public static ComponentType ReadOnly<T>()
-        //{
+        // public static ComponentType ReadOnly<T>()
+        // {
         //    ComponentType t = ReadWrite<T>();
         //    t.AccessModeType = AccessMode.ReadOnly;
         //    return t;
-        //}
+        // }
 
         public static ComponentType Exclude(Type type)
         {
@@ -83,7 +83,7 @@ namespace Entities
             AccessModeType = accessModeType;
         }
 
-        public Type GetManagedType()
+        public readonly Type GetManagedType()
         {
             return TypeManager.GetType(TypeIndex);
         }
@@ -91,6 +91,11 @@ namespace Entities
         public static implicit operator ComponentType(Type type)
         {
             return new ComponentType(type, AccessMode.ReadWrite);
+        }
+
+        public static implicit operator Type(ComponentType type)
+        {
+            return type.GetManagedType();
         }
 
         public static bool operator <(ComponentType lhs, ComponentType rhs)
@@ -108,12 +113,27 @@ namespace Entities
 
         public static bool operator ==(ComponentType lhs, ComponentType rhs)
         {
-            return lhs.TypeIndex == rhs.TypeIndex && lhs.AccessModeType == rhs.AccessModeType;
+            return lhs.Equals(rhs);
         }
 
         public static bool operator !=(ComponentType lhs, ComponentType rhs)
         {
-            return lhs.TypeIndex != rhs.TypeIndex || lhs.AccessModeType != rhs.AccessModeType;
+            return !lhs.Equals(rhs);
+        }
+
+        public bool Equals(ComponentType other)
+        {
+            return this.TypeIndex == other.TypeIndex && this.AccessModeType == other.AccessModeType;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is ComponentType type && Equals(type);
+        }
+
+        public override int GetHashCode()
+        {
+            return TypeIndex * 5813;
         }
 
         public override string ToString()
@@ -127,21 +147,6 @@ namespace Entities
 
             return ns.ToString();
 
-        }
-
-        public bool Equals(ComponentType other)
-        {
-            return TypeIndex == other.TypeIndex;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj is ComponentType type && type == this;
-        }
-
-        public override int GetHashCode()
-        {
-            return TypeIndex * 5813;
         }
     }
 }

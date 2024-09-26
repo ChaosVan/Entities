@@ -271,7 +271,7 @@ namespace Entities
 
         internal static void IsAssemblyReferencingEntitiesOrUnityEngine(Assembly assembly, out bool referencesEntities, out bool referencesUnityEngine)
         {
-            const string kEntitiesAssemblyName = "PureMVCFramework.Entity";
+            const string kEntitiesAssemblyName = "Entities";
             //const string kUnityEngineAssemblyName = "UnityEngine";
             var assemblyName = assembly.GetName().Name;
 
@@ -411,7 +411,7 @@ namespace Entities
 
         public static bool IsAssemblyReferencingEntities(Assembly assembly)
         {
-            const string kEntitiesAssemblyName = "PureMVCFramework.Entity";
+            const string kEntitiesAssemblyName = "Entities";
             if (assembly.GetName().Name.Contains(kEntitiesAssemblyName))
                 return true;
 

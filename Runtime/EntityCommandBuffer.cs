@@ -15,9 +15,9 @@ namespace Entities
             m_Data.Clear();
         }
 
-        internal void CreateEntity(Entity entity, EntityArchetype archetype)
+        internal void CreateEntity(Entity entity, EntityQuery query)
         {
-            AddEntityArchetypeCommand(ECBCommand.CreateEntity, entity, archetype);
+            AddEntityArchetypeCommand(ECBCommand.CreateEntity, entity, query);
         }
 
         internal void DestroyEntity(Entity entity)
@@ -30,11 +30,6 @@ namespace Entities
             AddEntityComponentTypeCommand(ECBCommand.AddComponent, entity, componentType);
         }
 
-        internal void AddComponentData(Entity entity, EntityArchetype archetype)
-        {
-            AddEntityArchetypeCommand(ECBCommand.AddComponentWithEntityArchetype, entity, archetype);
-        }
-
         internal void RemoveComponentData(Entity entity, ComponentType componentType)
         {
             AddEntityComponentTypeCommand(ECBCommand.RemoveComponent, entity, componentType);
@@ -42,12 +37,17 @@ namespace Entities
 
         internal void RemoveComponentData(Entity entity, EntityQuery query)
         {
-            AddEntityQueryCommand(ECBCommand.RemoveComponentWithEntityQuery, entity, query);
+            AddEntityQueryCommand(ECBCommand.RemoveComponentWithQuery, entity, query);
         }
 
         internal void SetComponentData(Entity entity, IComponentData componentData)
         {
             AddEntityComponentDataCommand(ECBCommand.SetComponent, entity, componentData);
+        }
+
+        internal void SetComponentData(Entity entity, EntityQuery query)
+        {
+            AddEntityArchetypeCommand(ECBCommand.SetComponentWithQuery, entity, query);
         }
 
         internal void BindGameObject(Entity entity, GameObject gameObject)
@@ -91,12 +91,12 @@ namespace Entities
             m_Data.Add(ecbd);
         }
 
-        private void AddEntityArchetypeCommand(ECBCommand op, Entity entity, EntityArchetype archetype)
+        private void AddEntityArchetypeCommand(ECBCommand op, Entity entity, EntityQuery query)
         {
             var ecbd = new EntityCommandBufferData();
             ecbd.commandType = op;
             ecbd.entity = entity;
-            ecbd.archetype = archetype;
+            ecbd.query = query;
             m_Data.Add(ecbd);
         }
 
@@ -133,7 +133,7 @@ namespace Entities
                     switch (data.commandType)
                     {
                         case ECBCommand.CreateEntity:
-                            EntityManager.InternalCreate(entity, data.archetype);
+                            EntityManager.InternalCreate(entity, data.query);
                             break;
                         case ECBCommand.DestroyEntity:
                             EntityManager.InternalDestroyEntity(entity);
@@ -141,17 +141,17 @@ namespace Entities
                         case ECBCommand.AddComponent:
                             EntityManager.InternalAddComponentData(entity, data.componentType);
                             break;
-                        case ECBCommand.AddComponentWithEntityArchetype:
-                            EntityManager.InternalAddComponentData(entity, data.archetype);
+                        case ECBCommand.SetComponent:
+                            EntityManager.InternalSetComponentData(entity, data.componentData);
+                            break;
+                        case ECBCommand.SetComponentWithQuery:
+                            EntityManager.InternalSetComponentData(entity, data.query);
                             break;
                         case ECBCommand.RemoveComponent:
                             EntityManager.InternalRemoveComponentData(entity, data.componentType);
                             break;
-                        case ECBCommand.RemoveComponentWithEntityQuery:
+                        case ECBCommand.RemoveComponentWithQuery:
                             EntityManager.InternalRemoveComponentData(entity, data.query);
-                            break;
-                        case ECBCommand.SetComponent:
-                            EntityManager.InternalSetComponentData(entity, data.componentData);
                             break;
                         case ECBCommand.BindGameObject:
                             EntityManager.OnGameObjectBind(entity, data.gameObject);
@@ -179,7 +179,6 @@ namespace Entities
         {
             internal ECBCommand commandType;
             internal Entity entity;
-            internal EntityArchetype archetype;
             internal ComponentType componentType;
             internal IComponentData componentData;
             internal EntityQuery query;
@@ -192,10 +191,10 @@ namespace Entities
             DestroyEntity,
 
             AddComponent,
-            AddComponentWithEntityArchetype,
-            RemoveComponent,
             SetComponent,
-            RemoveComponentWithEntityQuery,
+            SetComponentWithQuery,
+            RemoveComponent,
+            RemoveComponentWithQuery,
 
             BindGameObject,
             UnbindGameObject,

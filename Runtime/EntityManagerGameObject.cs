@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -13,15 +12,6 @@ namespace Entities
         internal static event Action<GameObject, Entity> OnEntityGameObjectBind;
         internal static event Action<GameObject> OnEntityGameObjectUnbind;
 
-        public static bool IsDataMode { get; set; }
-
-        public static void Draw(LocalToWorld matrix)
-        {
-            Debug.DrawLine(matrix.Position, matrix.Position + math.mul(matrix.Rotation, math.right()) * 1, Color.red);
-            Debug.DrawLine(matrix.Position, matrix.Position + math.mul(matrix.Rotation, math.up()) * 1, Color.green);
-            Debug.DrawLine(matrix.Position, matrix.Position + math.mul(matrix.Rotation, math.forward()) * 1, Color.blue);
-        }
-
         public static bool TryGetEntityByGameObject(GameObject gameObject, out Entity entity)
         {
             return LookUp.TryGetValue(gameObject, out entity);
@@ -29,23 +19,23 @@ namespace Entities
 
         public static Entity Create(GameObject gameObject, EntityCommandBuffer commandBuffer = null)
         {
-            EntityArchetype archetype = default;
-            return Create(gameObject, archetype, commandBuffer);
+            EntityQuery query = default;
+            return Create(gameObject, query, commandBuffer);
         }
 
-        public static Entity Create(GameObject gameObject, EntityArchetype archetype, EntityCommandBuffer commandBuffer = null)
+        public static Entity Create(GameObject gameObject, EntityQuery query, EntityCommandBuffer commandBuffer = null)
         {
             Assert.IsNotNull(gameObject);
 
             commandBuffer ??= CreateBeginCommandBuffer();
             if (!TryGetEntityByGameObject(gameObject, out var entity))
             {
-                entity = Create(archetype, commandBuffer);
+                entity = Create(query, commandBuffer);
                 BindGameObject(entity, gameObject, commandBuffer);
             }
             else
             {
-                AddComponentData(entity, archetype, commandBuffer);
+                SetComponentData(entity, query, commandBuffer);
             }
 
             return entity;
@@ -63,10 +53,7 @@ namespace Entities
         public static void UnbindGameObject(Entity entity, out GameObject gameObject, EntityCommandBuffer commandBuffer = null)
         {
             gameObject = null;
-            if (!CheckValid(entity))
-                return;
-
-            if (TryGetEntityData(entity, out var data) && data.gameObject != null)
+            if (CheckValid(entity) && TryGetEntityData(entity, out var data) && data.gameObject != null)
             {
                 gameObject = data.gameObject;
                 commandBuffer ??= CreateEndCommandBuffer();

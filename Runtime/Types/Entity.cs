@@ -35,11 +35,6 @@ namespace Entities
             return lhs.Equals(rhs);
         }
 
-        public override int GetHashCode()
-        {
-            return index.GetHashCode();
-        }
-
         public bool Equals(Entity entity)
         {
             return entity.index == index;
@@ -48,6 +43,11 @@ namespace Entities
         public override bool Equals(object obj)
         {
             return obj is Entity entity && Equals(entity);
+        }
+
+        public override int GetHashCode()
+        {
+            return index.GetHashCode();
         }
 
         public override string ToString()
@@ -66,12 +66,13 @@ namespace Entities
         public EntityData()
         {
             m_AllComponentData = new IComponentData[TypeManager.TypeCount];
+            archetype = new EntityArchetype(TypeManager.TypeCount);
         }
 
         public void Dispose()
         {
             Assert.IsNull(gameObject);
-            Assert.IsFalse(archetype.Valid, $"{GUID}");
+            Assert.IsTrue(archetype.IsNull);
             for (int i = 0; i < m_AllComponentData.Length; i++)
                 Assert.IsNull(m_AllComponentData[i], $"{GUID}: {m_AllComponentData[i]}");
             GUID = 0UL;
@@ -79,16 +80,16 @@ namespace Entities
 
         internal void InternalAddComponentData(ComponentType type, IComponentData componentData)
         {
-            Assert.IsNull(m_AllComponentData[type.TypeIndex], $"{GUID} already has type: {TypeManager.GetType(type.TypeIndex).FullName}, {m_AllComponentData[type.TypeIndex]}");
-            archetype.AddComponentType(type);
+            Assert.IsNull(m_AllComponentData[type.TypeIndex], $"{GUID} already has type: {type.GetManagedType().FullName}, {m_AllComponentData[type.TypeIndex]}");
+            archetype.SetComponentType(type);
             m_AllComponentData[type.TypeIndex] = componentData;
         }
 
         internal bool InternalRemoveComponentData(ComponentType type, out IComponentData ret)
         {
-            if (InternalGetComponentData(type, out ret))
+            if (InternalGetComponentData(type, out ret) && ret != null)
             {
-                archetype.RemoveComponentType(type);
+                archetype.SetComponentType(ComponentType.Exclude(type.TypeIndex));
                 m_AllComponentData[type.TypeIndex] = null;
                 return true;
             }
@@ -107,26 +108,12 @@ namespace Entities
         internal bool InternalGetComponentData(ComponentType type, out IComponentData ret)
         {
             ret = m_AllComponentData[type.TypeIndex];
-            if (type.AccessModeType == ComponentType.AccessMode.Exclude)
-                return ret == null;
-
-            // if (type.AccessModeType == ComponentType.AccessMode.ReadOnly)
-            //     return ret != null; // do nothing for now
-
-            return ret != null;
+            return archetype[type.TypeIndex] == type;
         }
 
         internal bool Match(EntityQuery query)
         {
-            Assert.IsTrue(query.TypesCount > 0);
-            for (int i = 0; i < query.TypesCount; i++)
-            {
-                if (!InternalGetComponentData(query.types[i], out _))
-                    return false;
-            }
-
-            return true;
+            return archetype.Match(query);
         }
     }
-
 }

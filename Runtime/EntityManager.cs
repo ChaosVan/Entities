@@ -47,20 +47,6 @@ namespace Entities
             return Entities.TryGetValue(entity, out data);
         }
 
-        public static bool TryGetEntities(EntityQuery query, out List<Entity> entities)
-        {
-            entities = new List<Entity>();
-            foreach (var entity in Entities.Keys)
-            {
-                if (Match(entity, query, out _))
-                {
-                    entities.Add(entity);
-                }
-            }
-
-            return entities.Count > 0;
-        }
-
         internal static Entity[] BeginStructual(int count, params Entity[] entities)
         {
             var array = new Entity[count];
@@ -77,12 +63,14 @@ namespace Entities
             {
                 if (e.Current is SystemBase system)
                 {
-                    foreach (var entity in entities)
-                    {
-                        system.InjectEntity(entity);
-                    }
+                    ForEach(entities, entity => system.InjectEntity(entity));
                 }
             }
+        }
+
+        public static void ForEach<T>(IEnumerable<T> ie, Action<T> action)
+        {
+            foreach (var obj in ie) action?.Invoke(obj);
         }
 
         public static EntityCommandBuffer CreateBeginCommandBuffer()
@@ -93,6 +81,20 @@ namespace Entities
         public static EntityCommandBuffer CreateEndCommandBuffer()
         {
             return ecbs_end.CreateCommandBuffer();
+        }
+
+        public static bool TryGetEntities(EntityQuery query, out List<Entity> entities)
+        {
+            entities = new List<Entity>();
+            foreach (var entity in Entities.Keys)
+            {
+                if (Match(entity, query, out _))
+                {
+                    entities.Add(entity);
+                }
+            }
+
+            return entities.Count > 0;
         }
 
         public static void DestroyAll(out GameObject[] gameObjects, EntityCommandBuffer commandBuffer = null)
@@ -131,37 +133,37 @@ namespace Entities
 
         public static Entity Create(EntityCommandBuffer commandBuffer = null)
         {
-            EntityArchetype archetype = default;
-            return Create(archetype, commandBuffer);
+            EntityQuery query = default;
+            return Create(query, commandBuffer);
         }
 
         public static Entity Create(EntityCommandBuffer commandBuffer = null, params ComponentType[] componentTypes)
         {
-            EntityArchetype archetype = new EntityArchetype(componentTypes);
-            return Create(archetype, commandBuffer);
+            EntityQuery query = new EntityQuery(componentTypes);
+            return Create(query, commandBuffer);
         }
 
-        public static Entity Create(EntityArchetype archetype, EntityCommandBuffer commandBuffer = null)
+        public static Entity Create(EntityQuery query, EntityCommandBuffer commandBuffer = null)
         {
-            Create(archetype, 1, out var entities, commandBuffer);
+            Create(query, 1, out var entities, commandBuffer);
             return entities[0];
         }
 
-        public static void Create(EntityArchetype archetype, int count, out Entity[] entities, EntityCommandBuffer commandBuffer = null)
+        public static void Create(EntityQuery query, int count, out Entity[] entities, EntityCommandBuffer commandBuffer = null)
         {
             commandBuffer ??= CreateBeginCommandBuffer();
             entities = new Entity[count];
             for (int i = 0; i < count; i++)
             {
                 entities[i] = new Entity { index = GUID_COUNT++ };
-                commandBuffer.CreateEntity(entities[i], archetype);
+                commandBuffer.CreateEntity(entities[i], query);
             }
         }
 
-        public static void AddComponentData(Entity entity, ComponentType componentType, EntityCommandBuffer commandBuffer = null)
+        public static void AddComponentData(Entity entity, Type type, EntityCommandBuffer commandBuffer = null)
         {
             commandBuffer ??= CreateBeginCommandBuffer();
-            commandBuffer.AddComponentData(entity, componentType);
+            commandBuffer.AddComponentData(entity, type);
         }
 
         public static void AddComponentData<T>(Entity entity, EntityCommandBuffer commandBuffer = null) where T : IComponentData
@@ -169,16 +171,10 @@ namespace Entities
             AddComponentData(entity, typeof(T), commandBuffer);
         }
 
-        public static void AddComponentData(Entity entity, EntityArchetype archetype, EntityCommandBuffer commandBuffer = null)
-        {
-            commandBuffer ??= CreateBeginCommandBuffer();
-            commandBuffer.AddComponentData(entity, archetype);
-        }
-
-        public static void RemoveComponentData(Entity entity, ComponentType componentType, EntityCommandBuffer commandBuffer = null)
+        public static void RemoveComponentData(Entity entity, Type type, EntityCommandBuffer commandBuffer = null)
         {
             commandBuffer ??= CreateEndCommandBuffer();
-            commandBuffer.RemoveComponentData(entity, componentType);
+            commandBuffer.RemoveComponentData(entity, type);
         }
 
         public static void RemoveComponentData<T>(Entity entity, EntityCommandBuffer commandBuffer = null) where T : IComponentData
@@ -198,9 +194,9 @@ namespace Entities
             commandBuffer.SetComponentData(entity, componentData);
         }
 
-        public static IComponentData SetComponentData(Entity entity, ComponentType componentType, EntityCommandBuffer commandBuffer = null)
+        public static IComponentData SetComponentData(Entity entity, Type type, EntityCommandBuffer commandBuffer = null)
         {
-            var componentData = (IComponentData)ReferencePool.SpawnInstance(TypeManager.GetType(componentType.TypeIndex));
+            var componentData = (IComponentData)ReferencePool.SpawnInstance(type);
             SetComponentData(entity, componentData, commandBuffer);
             return componentData;
         }
@@ -212,11 +208,17 @@ namespace Entities
             return componentData;
         }
 
-        public static bool TryGetComponentData(Entity entity, ComponentType componentType, out IComponentData componentData)
+        public static void SetComponentData(Entity entity, EntityQuery query, EntityCommandBuffer commandBuffer = null)
+        {
+            commandBuffer ??= CreateBeginCommandBuffer();
+            commandBuffer.SetComponentData(entity, query);
+        }
+
+        public static bool TryGetComponentData(Entity entity, ComponentType type, out IComponentData componentData)
         {
             componentData = null;
             if (CheckValid(entity) && TryGetEntityData(entity, out var data))
-                return data.InternalGetComponentData(componentType, out componentData);
+                return data.InternalGetComponentData(type, out componentData);
 
             return false;
         }
@@ -230,23 +232,13 @@ namespace Entities
             return false;
         }
 
-        internal static EntityData InternalCreate(Entity entity, EntityArchetype archetype)
+        internal static EntityData InternalCreate(Entity entity, EntityQuery query)
         {
             var data = ReferencePool.SpawnInstance<EntityData>();
             data.GUID = entity;
             Entities.Add(entity, data);
-
             OnEntityCreated?.Invoke(entity);
-
-            if (archetype.TypesCount > 0)
-            {
-                foreach (var componentType in archetype.types)
-                {
-                    var componentData = (IComponentData)ReferencePool.SpawnInstance(TypeManager.GetType(componentType.TypeIndex));
-                    data.InternalAddComponentData(componentType, componentData);
-                    OnEntityAddComponentData?.Invoke(entity, componentData);
-                }
-            }
+            InternalSetComponentData(entity, query);
 
             return data;
         }
@@ -255,15 +247,7 @@ namespace Entities
         {
             if (CheckValid(entity) && TryGetEntityData(entity, out var data))
             {
-                while (data.archetype.TypesCount > 0)
-                {
-                    if (data.InternalRemoveComponentData(data.archetype.types[0], out var componentData))
-                    {
-                        OnEntityRemoveComponentData?.Invoke(entity, componentData);
-                        ReferencePool.RecycleInstance(componentData);
-                    }
-                }
-
+                InternalRemoveComponentData(entity, data.archetype);
                 OnEntityDestroyed?.Invoke(entity);
                 Entities.Remove(entity);
                 ReferencePool.RecycleInstance(data);
@@ -274,49 +258,9 @@ namespace Entities
         {
             if (CheckValid(entity) && TryGetEntityData(entity, out var data))
             {
-                var componentData = (IComponentData)ReferencePool.SpawnInstance(TypeManager.GetType(componentType.TypeIndex));
+                var componentData = (IComponentData)ReferencePool.SpawnInstance(componentType);
                 data.InternalAddComponentData(componentType, componentData);
                 OnEntityAddComponentData?.Invoke(entity, componentData);
-            }
-        }
-
-        internal static void InternalAddComponentData(Entity entity, EntityArchetype archetype)
-        {
-            if (CheckValid(entity) && archetype.TypesCount > 0 && TryGetEntityData(entity, out var data))
-            {
-                foreach (var componentType in archetype.types)
-                {
-                    var componentData = (IComponentData)ReferencePool.SpawnInstance(TypeManager.GetType(componentType.TypeIndex));
-                    data.InternalAddComponentData(componentType, componentData);
-                    OnEntityAddComponentData?.Invoke(entity, componentData);
-                }
-            }
-        }
-
-        internal static void InternalRemoveComponentData(Entity entity, ComponentType type)
-        {
-            if (CheckValid(entity) && TryGetEntityData(entity, out var data))
-            {
-                if (data.InternalRemoveComponentData(type, out var componentData))
-                {
-                    OnEntityRemoveComponentData?.Invoke(entity, componentData);
-                    ReferencePool.RecycleInstance(componentData);
-                }
-            }
-        }
-
-        internal static void InternalRemoveComponentData(Entity entity, EntityQuery query)
-        {
-            if (CheckValid(entity) && query.TypesCount > 0 && TryGetEntityData(entity, out var data))
-            {
-                for (int i = 0; i < query.TypesCount; i++)
-                {
-                    if (data.InternalRemoveComponentData(query.types[i], out var componentData))
-                    {
-                        OnEntityRemoveComponentData?.Invoke(entity, componentData);
-                        ReferencePool.RecycleInstance(componentData);
-                    }
-                }
             }
         }
 
@@ -337,6 +281,65 @@ namespace Entities
             }
         }
 
+        internal static void InternalSetComponentData(Entity entity, EntityQuery query)
+        {
+            if (query.Valid && CheckValid(entity) && TryGetEntityData(entity, out var data))
+            {
+                ForEach(query.types, componentType =>
+                {
+                    if (componentType.AccessModeType == ComponentType.AccessMode.ReadWrite)
+                    {
+                        var componentData = (IComponentData)ReferencePool.SpawnInstance(componentType);
+                        if (data.InternalSetComponentData(componentData, out var outData))
+                        {
+                            if (outData != null)
+                            {
+                                OnEntityRemoveComponentData?.Invoke(entity, outData);
+                                ReferencePool.RecycleInstance(outData);
+                            }
+
+                            OnEntityAddComponentData?.Invoke(entity, componentData);
+                        }
+                    }
+                    else if (componentType.AccessModeType == ComponentType.AccessMode.Exclude)
+                    {
+                        if (data.InternalRemoveComponentData(componentType.GetManagedType(), out var componentData))
+                        {
+                            OnEntityRemoveComponentData?.Invoke(entity, componentData);
+                            ReferencePool.RecycleInstance(componentData);
+                        }
+                    }
+                });
+            }
+        }
+
+        internal static void InternalRemoveComponentData(Entity entity, ComponentType type)
+        {
+            if (CheckValid(entity) && TryGetEntityData(entity, out var data))
+            {
+                if (data.InternalRemoveComponentData(type, out var componentData))
+                {
+                    OnEntityRemoveComponentData?.Invoke(entity, componentData);
+                    ReferencePool.RecycleInstance(componentData);
+                }
+            }
+        }
+
+        internal static void InternalRemoveComponentData(Entity entity, EntityQuery query)
+        {
+            if (query.Valid && CheckValid(entity) && TryGetEntityData(entity, out var data))
+            {
+                ForEach(query.types, componentType =>
+                {
+                    if (data.InternalRemoveComponentData(componentType, out var componentData))
+                    {
+                        OnEntityRemoveComponentData?.Invoke(entity, componentData);
+                        ReferencePool.RecycleInstance(componentData);
+                    }
+                });
+            }
+        }
+
         internal static bool Match(Entity entity, EntityQuery query, out EntityData data)
         {
             data = null;
@@ -353,8 +356,8 @@ namespace Entities
         {
             if (EntityManager.TryGetComponentData(entity, typeof(T), out var componentData))
                 return (T)componentData;
-            
-            return EntityManager.SetComponentData<T>(entity, commandBuffer);;
+
+            return EntityManager.SetComponentData<T>(entity, commandBuffer); ;
         }
 
         public static T GetOrAddComponentObject<T>(this Entity entity, EntityCommandBuffer commandBuffer = null) where T : Component
@@ -363,6 +366,30 @@ namespace Entities
                 component = EntityManager.AddComponentObject<T>(entity, commandBuffer);
 
             return component;
+        }
+
+        public static Entity[] Expand(this Entity[] array, Entity item)
+        {
+            Entity[] newArray = new Entity[array.Length + 1];
+            Array.Copy(array, newArray, array.Length);
+            newArray[array.Length] = item;
+            return newArray;
+        }
+
+        public static bool Contains(this Entity[] array, Entity item)
+        {
+            return array.IndexOf(item) >= 0;
+        }
+
+        public static int IndexOf(this Entity[] array, Entity item)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i].Equals(item))
+                    return i;
+            }
+
+            return -1;
         }
     }
 }
