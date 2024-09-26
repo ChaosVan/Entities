@@ -62,7 +62,13 @@ namespace Entities
 
         public override int GetHashCode()
         {
-            return base.GetHashCode();
+            int hashCode = 0;
+            for (int i = 0; i < types.Length; i++)
+            {
+                if (types[i].AccessModeType != ComponentType.AccessMode.Exclude)
+                    hashCode ^= types[i].GetHashCode();
+            }
+            return hashCode;
         }
 
         public static implicit operator EntityQuery(EntityArchetype archetype)
