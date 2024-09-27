@@ -1,11 +1,35 @@
+using System;
 using UnityEngine;
 using UnityEngine.Scripting;
 
 namespace Entities
 {
-    public class LifeTime : IComponentData
+    public class LifeTime : IComponentData, IDisposable
     {
         public float Value;
+
+        private Action<GameObject> destroy;
+        public Action<GameObject> OnDestroy
+        {
+            get => destroy;
+            set => destroy = value;
+        }
+
+        public void Dispose()
+        {
+            destroy = null;
+        }
+
+        internal void Destroy(GameObject gameObject)
+        {
+            if (gameObject == null)
+                return;
+
+            if (destroy != null)
+                destroy.Invoke(gameObject);
+            else
+                UnityEngine.Object.Destroy(gameObject);
+        }
     }
 
     [Preserve]
@@ -25,8 +49,7 @@ namespace Entities
             if (component.Value <= 0)
             {
                 EntityManager.DestroyEntity(entity, out var gameObject, CommandBuffer);
-                if (gameObject != null)
-                    Object.Destroy(gameObject);
+                component.Destroy(gameObject);
             }
         }
     }
