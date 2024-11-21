@@ -123,10 +123,8 @@ namespace Entities
                 if (obj is IDisposable d)
                     d.Dispose();
 
-                if (!m_Cache.ContainsKey(typeName))
-                    m_Cache[typeName] = new ConcurrentQueue<object>();
-
-                m_Cache[typeName].Enqueue(obj);
+                var queue = m_Cache.GetOrAdd(typeName, key => new ConcurrentQueue<object>());
+                queue.Enqueue(obj);
                 OnChanged?.Invoke(typeName);
             }
 
